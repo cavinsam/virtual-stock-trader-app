@@ -1,0 +1,52 @@
+# Production Docker Compose file using published images from Docker Hub
+# This file defines and connects all the services for your application using pre-built images.
+services:
+
+  # 1. The MySQL Database Service
+  db:
+    image: mysql:8.0
+    container_name: vst-mysql-db
+    restart: unless-stopped
+    environment:
+      # These variables should be set in your .env file for production
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: virtual_stock_trader
+    ports:
+      - "3306:3306"
+    volumes:
+      # This creates a persistent volume to store your database data,
+      # so your user data is not lost when you stop the containers.
+      - mysql-data:/var/lib/mysql
+
+  # 2. The Spring Boot Backend Service (using published image)
+  backend:
+    image: cavinsam/virtual-stock-trading-app-backend:latest
+    container_name: vst-backend-app
+    restart: unless-stopped
+    depends_on:
+      - db # Ensures the database starts before the backend.
+    ports:
+      - "8081:8081"
+    environment:
+      # This is the critical part: it tells Spring Boot to connect to the 'db' container.
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/virtual_stock_trader
+      - SPRING_DATASOURCE_USERNAME=root
+      # These variables should be set in your .env file for production
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - ALPHAVANTAGE_API_KEY=${ALPHAVANTAGE_API_KEY}
+
+  # 3. The React Frontend Service (using published image)
+  frontend:
+    image: cavinsam/virtual-stock-trading-app-frontend:latest
+    container_name: vst-frontend-app
+    restart: unless-stopped
+    ports:
+      # This makes your website available at http://localhost
+      - "80:80"
+    depends_on:
+      - backend # Ensures the backend starts before the frontend.
+
+# This section defines the named volume used by the 'db' service for data persistence.
+volumes:
+  mysql-data:

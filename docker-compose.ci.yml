@@ -1,0 +1,91 @@
+# Docker Compose file for CI/CD testing
+version: '3.8'
+
+services:
+  # MySQL Database for testing
+  db:
+    image: mysql:8.0
+    container_name: vst-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-test_password}
+      MYSQL_DATABASE: virtual_stock_trader_test
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    volumes:
+      - mysql-test-data:/var/lib/mysql
+
+  # Backend service for testing
+  backend:
+    image: ${BACKEND_IMAGE:-cavinsam/virtual-stock-trading-app-backend}:${BUILD_TAG:-latest}
+    container_name: vst-backend-test
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/virtual_stock_trader_test
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-test_password}
+      - JWT_SECRET=${JWT_SECRET:-test_jwt_secret}
+      - ALPHAVANTAGE_API_KEY=${ALPHAVANTAGE_API_KEY:-test_api_key}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/auth/test"]
+      timeout: 10s
+      retries: 5
+      interval: 10s
+
+  # Frontend service for testing
+  frontend:
+    image: ${FRONTEND_IMAGE:-cavinsam/virtual-stock-trading-app-frontend}:${BUILD_TAG:-latest}
+    container_name: vst-frontend-test
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 10s
+      retries: 5
+      interval: 10s
+
+  # Test runner service
+  test-runner:
+    image: curlimages/curl:latest
+    container_name: vst-test-runner
+    depends_on:
+      frontend:
+        condition: service_healthy
+    command: |
+      sh -c '
+        echo "🧪 Starting integration tests..."
+        
+        # Test backend health
+        echo "Testing backend health endpoint..."
+        curl -f http://backend:8081/api/auth/test || exit 1
+        
+        # Test frontend
+        echo "Testing frontend..."
+        curl -f http://frontend:80 || exit 1
+        
+        # Test API proxy
+        echo "Testing API proxy..."
+        curl -f http://frontend:80/api/auth/test || exit 1
+        
+        # Test signup endpoint
+        echo "Testing signup endpoint..."
+        curl -X POST http://frontend:80/api/auth/signup \
+          -H "Content-Type: application/json" \
+          -d "{\"username\":\"testuser\",\"email\":\"test@example.com\",\"password\":\"password123\"}" || exit 1
+        
+        echo "✅ All integration tests passed!"
+      '
+
+volumes:
+  mysql-test-data:
