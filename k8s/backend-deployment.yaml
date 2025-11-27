@@ -37,18 +37,27 @@ spec:
             name: app-config
         - secretRef:
             name: app-secrets
+        startupProbe:
+          httpGet:
+            path: /api/auth/status
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 30
         livenessProbe:
           httpGet:
             path: /api/auth/status
             port: 8081
-          initialDelaySeconds: 45
+          initialDelaySeconds: 120
           periodSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /api/auth/status
             port: 8081
-          initialDelaySeconds: 30
+          initialDelaySeconds: 120
           periodSeconds: 5
+          failureThreshold: 3
         resources:
           requests:
             cpu: 250m
