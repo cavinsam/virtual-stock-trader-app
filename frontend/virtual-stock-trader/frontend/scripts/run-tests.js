@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
 
 // Collect args passed after `npm test -- ...`
 let args = process.argv.slice(2) || [];
