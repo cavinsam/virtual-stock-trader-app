@@ -1,0 +1,32 @@
+---
+# Docker Compose role default variables
+
+# Docker Compose configuration
+compose_project_name: "virtual-stock-trader"
+compose_file: "docker-compose.yml"
+compose_version: "3.8"
+
+# Environment configuration
+mysql_root_password: "vst_prod_password_change_me"
+spring_datasource_password: "vst_prod_password_change_me"
+jwt_secret: "your_jwt_secret_key_change_me"
+
+# Service ports
+services:
+  mysql:
+    port: 3306
+    health_check_retries: 30
+  backend:
+    port: 8081
+    health_check_retries: 30
+  frontend:
+    port: 3000
+    health_check_retries: 10
+
+# Docker networks
+compose_networks:
+  - "vst-network"
+
+# Volume configuration
+volume_persistence:
+  mysql_data: "vst-mysql-data"

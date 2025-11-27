@@ -1,0 +1,45 @@
+---
+# Kubernetes role default variables
+
+# Kubernetes cluster configuration
+k8s_namespace: "virtual-stock-trader"
+k8s_context: "docker-desktop"
+k8s_manifest_path: "k8s"
+
+# kubectl version
+kubectl_version: "1.32.0"
+
+# Helm configuration (optional)
+helm_version: "3.13.0"
+helm_repos:
+  - name: "stable"
+    url: "https://charts.helm.sh/stable"
+
+# Kustomize configuration
+kustomize_version: "5.0.0"
+
+# Resource requests and limits (defaults for deployments)
+resource_defaults:
+  backend:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  frontend:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+# Pod configuration
+pod_restart_policy: "Always"
+pod_termination_grace_period: 30
+
+# Probe timeouts
+startup_probe_timeout: 120
+readiness_probe_timeout: 120
+liveness_probe_timeout: 120

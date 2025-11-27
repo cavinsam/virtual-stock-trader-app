@@ -1,0 +1,46 @@
+---
+# Remote deployment group variables
+
+# Deployment target
+deployment_target: "remote"
+deployment_environment: "production"
+
+# Remote system configuration
+ansible_connection: "ssh"
+ansible_port: 22
+ansible_user: "{{ remote_user | default('deploy') }}"
+ansible_ssh_private_key_file: "{{ remote_ssh_key | default('~/.ssh/id_rsa') }}"
+
+# Remote paths
+remote_project_dir: "/opt/virtual-stock-trader"
+remote_data_dir: "/data/virtual-stock-trader"
+remote_logs_dir: "/var/log/virtual-stock-trader"
+
+# Container registry authentication
+registry_username: "{{ docker_hub_username }}"
+registry_password: "{{ docker_hub_password }}"
+registry_email: "{{ docker_hub_email }}"
+
+# Database configuration
+mysql_host: "mysql-service"
+mysql_port: 3306
+mysql_database: "virtual_stock_trader"
+
+# Service endpoints (internal)
+frontend_url: "http://frontend-service"
+backend_url: "http://backend-service:8081"
+api_url: "http://backend-service:8081/api"
+
+# TLS/SSL configuration
+enable_tls: true
+tls_cert_path: "/etc/tls/certs"
+tls_key_path: "/etc/tls/private"
+
+# Logging and monitoring
+log_level: "WARN"
+debug_mode: false
+monitoring_enabled: true
+
+# High availability
+ha_enabled: true
+replica_count: 3

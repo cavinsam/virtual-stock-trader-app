@@ -1,0 +1,64 @@
+---
+# Docker Compose deployment orchestration tasks
+
+- name: Set Docker Compose facts
+  set_fact:
+    compose_file: "docker-compose.yml"
+    compose_project_name: "virtual-stock-trader"
+
+- name: Ensure Docker Compose is installed
+  command: which docker-compose
+  register: compose_check
+  failed_when: compose_check.rc != 0
+  changed_when: false
+
+- name: Create .env file from template
+  template:
+    src: docker-compose.env.j2
+    dest: "{{ ansible_user_dir }}/.env"
+    mode: '0600'
+  vars:
+    mysql_root_password: "{{ lookup('env', 'MYSQL_ROOT_PASSWORD') | default('vst_prod_password_change_me') }}"
+    spring_datasource_password: "{{ lookup('env', 'SPRING_DATASOURCE_PASSWORD') | default('vst_prod_password_change_me') }}"
+    jwt_secret: "{{ lookup('env', 'JWT_SECRET') | default('your_jwt_secret_key_change_me') }}"
+
+- name: Pull latest Docker images
+  docker_image:
+    name: "{{ item }}"
+    tag: latest
+    source: pull
+  loop:
+    - "cavinsam/virtual-stock-trading-app-backend"
+    - "cavinsam/virtual-stock-trading-app-frontend"
+    - "mysql"
+  ignore_errors: yes
+
+- name: Start Docker Compose services
+  docker_compose:
+    project_name: "{{ compose_project_name }}"
+    files:
+      - "{{ compose_file }}"
+    state: present
+  environment:
+    COMPOSE_DOCKER_CLI_BUILD: 1
+
+- name: Wait for services to be healthy
+  wait_for:
+    host: "{{ item.host }}"
+    port: "{{ item.port }}"
+    delay: 5
+    timeout: 60
+  loop:
+    - { host: "localhost", port: 3306 }  # MySQL
+    - { host: "localhost", port: 8081 }  # Backend
+    - { host: "localhost", port: 3000 }  # Frontend
+  ignore_errors: yes
+
+- name: Display Docker Compose services status
+  shell: docker-compose -f "{{ compose_file }}" ps
+  register: compose_status
+  changed_when: false
+
+- name: Show services status
+  debug:
+    msg: "{{ compose_status.stdout }}"

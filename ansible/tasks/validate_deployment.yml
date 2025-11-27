@@ -1,0 +1,91 @@
+---
+# Post-deployment validation and health checks
+
+- name: Set validation facts
+  set_fact:
+    health_check_retries: "{{ validation_retries | default(30) }}"
+    health_check_delay: 10
+
+- name: Health check based on deployment method
+  block:
+    - name: Kubernetes health checks
+      block:
+        - name: Get pod status
+          kubernetes.core.k8s_info:
+            kind: Pod
+            namespace: "virtual-stock-trader"
+          register: pod_status
+
+        - name: Display pod status
+          debug:
+            msg: |
+              Pod Status:
+              {% for pod in pod_status.resources %}
+              - {{ pod.metadata.name }}: {{ pod.status.phase }} (Ready: {{ pod.status.conditions | selectattr('type', 'equalto', 'Ready') | map(attribute='status') | first | default('Unknown') }})
+              {% endfor %}
+
+        - name: Check frontend endpoint
+          uri:
+            url: "http://localhost:3000"
+            status_code: 200
+          register: frontend_health
+          retries: 10
+          delay: 10
+          until: frontend_health.status == 200
+          ignore_errors: yes
+
+        - name: Check backend endpoint
+          uri:
+            url: "http://localhost:8081/health"
+            status_code: 200
+          register: backend_health
+          retries: 30
+          delay: 10
+          until: backend_health.status == 200
+          ignore_errors: yes
+
+      when: deployment_method == 'kubernetes'
+
+    - name: Docker Compose health checks
+      block:
+        - name: Get container status
+          shell: docker ps --filter "name={{ compose_project_name }}" --format "table {{.Names}}\t{{.Status}}"
+          register: container_status
+          changed_when: false
+
+        - name: Display container status
+          debug:
+            msg: "{{ container_status.stdout }}"
+
+        - name: Check frontend health
+          uri:
+            url: "http://localhost:3000"
+            status_code: 200
+          register: frontend_health
+          retries: 10
+          delay: 10
+          until: frontend_health.status == 200
+          ignore_errors: yes
+
+        - name: Check backend health
+          uri:
+            url: "http://localhost:8081/health"
+            status_code: 200
+          register: backend_health
+          retries: 30
+          delay: 10
+          until: backend_health.status == 200
+          ignore_errors: yes
+
+      when: deployment_method == 'docker_compose'
+
+- name: Validation results
+  debug:
+    msg: |
+      ╔════════════════════════════════════════════════════════════════╗
+      ║                  Deployment Validation Results                 ║
+      ╠════════════════════════════════════════════════════════════════╣
+      ║ Frontend Status: {{ 'OK' if frontend_health.status == 200 else 'FAILED' }}
+      ║ Backend Status: {{ 'OK' if backend_health.status == 200 else 'FAILED' }}
+      ║ Deployment Method: {{ deployment_method }}
+      ╚════════════════════════════════════════════════════════════════╝

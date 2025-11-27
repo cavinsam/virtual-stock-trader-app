@@ -1,0 +1,28 @@
+---
+# Docker role default variables
+
+# Docker installation
+docker_repo_url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}"
+docker_gpg_key: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+
+# Docker configuration
+docker_daemon_config:
+  debug: false
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+
+# Docker Hub credentials
+docker_registry_url: "https://index.docker.io/v1/"
+docker_username: "{{ docker_hub_username | default('') }}"
+docker_password: "{{ docker_hub_password | default('') }}"
+
+# Docker Compose version
+docker_compose_version: "2.20.0"
+
+# Container images
+container_images:
+  - "cavinsam/virtual-stock-trading-app-backend:latest"
+  - "cavinsam/virtual-stock-trading-app-frontend:latest"
+  - "mysql:8.0"

@@ -1,0 +1,28 @@
+---
+# roles/monitoring/tasks/main.yml
+# Setup basic monitoring and alerting
+
+- name: Create monitoring namespace (optional)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: monitoring
+  when: deployment_method == 'kubernetes' and enable_monitoring | default(false) | bool
+
+- name: Setup logging (optional)
+  debug:
+    msg: "Monitoring setup completed. Consider installing Prometheus/Grafana for production."
+
+- name: Display monitoring recommendations
+  debug:
+    msg: |
+      Monitoring Recommendations:
+      1. Prometheus: For metrics collection
+      2. Grafana: For visualization
+      3. ELK Stack: For centralized logging
+      4. AlertManager: For alerting
+      
+      To enable production monitoring, set enable_monitoring=true

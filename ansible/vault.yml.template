@@ -1,0 +1,30 @@
+# Ansible Vault Template
+# IMPORTANT: This is a template. Run "ansible-vault create vault.yml" to create encrypted version
+# DO NOT commit unencrypted secrets to git
+
+---
+# Database Secrets
+mysql_root_password: "{{ env_mysql_root_password | default('CHANGEME_mysql_password') }}"
+spring_datasource_password: "{{ env_spring_datasource_password | default('CHANGEME_spring_password') }}"
+
+# JWT Secrets
+jwt_secret: "{{ env_jwt_secret | default('CHANGEME_jwt_secret_key_32_characters') }}"
+
+# Docker Registry Secrets
+docker_hub_username: "{{ env_docker_hub_username | default('your_docker_hub_username') }}"
+docker_hub_password: "{{ env_docker_hub_password | default('your_docker_hub_token') }}"
+docker_hub_email: "{{ env_docker_hub_email | default('your_email@example.com') }}"
+
+# GitHub Secrets (for CI/CD)
+github_token: "{{ env_github_token | default('') }}"
+
+# Remote SSH Configuration (for remote deployments)
+remote_ssh_key: "{{ env_remote_ssh_key | default('~/.ssh/id_rsa') }}"
+remote_user: "{{ env_remote_user | default('deploy') }}"
+
+# API Keys
+alphavantage_api_key: "{{ env_alphavantage_api_key | default('demo') }}"
+
+# Monitoring Credentials (optional)
+grafana_admin_password: "{{ env_grafana_admin_password | default('CHANGEME_grafana_admin') }}"
+prometheus_basic_auth_password: "{{ env_prometheus_basic_auth_password | default('') }}"

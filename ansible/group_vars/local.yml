@@ -1,0 +1,32 @@
+---
+# Local deployment group variables
+
+# Deployment target
+deployment_target: "local"
+deployment_environment: "development"
+
+# Local system paths
+local_user: "{{ ansible_user_id }}"
+local_home: "{{ ansible_user_dir }}"
+local_project_dir: "{{ ansible_user_dir }}/virtual-stock-trader"
+
+# Container configuration
+container_registry: "docker.io"
+image_pull_policy: "IfNotPresent"
+
+# Resource constraints for local development
+enable_resource_limits: false
+
+# Database configuration
+mysql_host: "localhost"
+mysql_port: 3306
+mysql_database: "virtual_stock_trader"
+
+# Service endpoints
+frontend_url: "http://localhost:3000"
+backend_url: "http://localhost:8081"
+api_url: "http://localhost:8081/api"
+
+# Logging
+log_level: "INFO"
+debug_mode: false

@@ -1,0 +1,27 @@
+---
+# Prerequisites role default variables
+
+# Project configuration
+project_repo: "https://github.com/cavinsam/virtual-stock-trader-app"
+project_dir: "/opt/virtual-stock-trader"
+project_branch: "main"
+
+# Package management
+required_packages:
+  - git
+  - curl
+  - wget
+  - jq
+  - python3
+  - python3-pip
+  - build-essential
+
+# Python dependencies
+python_packages:
+  - ansible
+  - pyyaml
+  - requests
+
+# Git configuration
+git_user_name: "{{ ansible_user_gecos | default('Deployment User') }}"
+git_user_email: "{{ ansible_user | default('deploy@example.com') }}@deployment.local"

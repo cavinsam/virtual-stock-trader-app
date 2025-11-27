@@ -1,0 +1,45 @@
+---
+# roles/docker-compose/tasks/main.yml
+# Deploy using Docker Compose
+
+- name: Create docker-compose environment file
+  template:
+    src: .env.j2
+    dest: "{{ project_dir }}/.env"
+    mode: '0600'
+
+- name: Start Docker Compose stack
+  docker_compose:
+    project_src: "{{ project_dir }}"
+    state: present
+    pull: yes
+  environment:
+    COMPOSE_FILE: docker-compose.yml
+    DOCKER_BUILDKIT: 1
+
+- name: Wait for services to be healthy
+  pause:
+    seconds: 10
+
+- name: Verify services health
+  docker_container_info:
+    name: "{{ item }}"
+  register: container_info
+  loop:
+    - virtual-stock-trader-backend-1
+    - virtual-stock-trader-frontend-1
+    - virtual-stock-trader-mysql-1
+  ignore_errors: yes
+
+- name: Display Docker Compose services
+  docker_compose_info:
+    project_src: "{{ project_dir }}"
+  register: compose_info
+
+- name: Show running containers
+  debug:
+    msg: |
+      Running Services:
+      {% for service in compose_info.services %}
+      - {{ service }}
+      {% endfor %}

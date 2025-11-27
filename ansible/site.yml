@@ -1,0 +1,58 @@
+---
+# site.yml - Main Ansible playbook for Virtual Stock Trader deployment
+# Supports both Kubernetes and Docker Compose deployments locally and remotely
+
+- name: Deploy Virtual Stock Trader Stack
+  hosts: "{{ deployment_target | default('localhost') }}"
+  become: "{{ become_sudo | default(false) }}"
+  gather_facts: yes
+  vars:
+    project_repo: "https://github.com/cavinsam/virtual-stock-trader-app.git"
+    project_dir: "/opt/virtual-stock-trader"
+    deployment_method: "{{ deployment_method | default('kubernetes') }}"  # kubernetes or docker-compose
+    registry_username: "cavinsam"
+    registry_password: "{{ vault_registry_password | default('') }}"
+    mysql_root_password: "{{ vault_mysql_root_password | default('vst_prod_password_change_me') }}"
+    jwt_secret: "{{ vault_jwt_secret | default('your_jwt_secret_key_change_me') }}"
+    namespace: "virtual-stock-trader"
+    docker_compose_version: "latest"
+    kubernetes_version: "latest"
+
+  pre_tasks:
+    - name: Validate deployment method
+      assert:
+        that:
+          - deployment_method in ['kubernetes', 'docker-compose']
+        fail_msg: "deployment_method must be 'kubernetes' or 'docker-compose'"
+
+    - name: Display deployment configuration
+      debug:
+        msg: |
+          Deploying Virtual Stock Trader
+          Environment: {{ deployment_env }}
+          Method: {{ deployment_method }}
+          Target Host: {{ inventory_hostname }}
+
+  roles:
+    - { role: prerequisites, tags: ['always'] }
+    - { role: docker, when: deployment_method == 'docker-compose' or deployment_method == 'kubernetes', tags: ['docker'] }
+    - { role: kubernetes, when: deployment_method == 'kubernetes', tags: ['kubernetes'] }
+    - { role: docker-compose, when: deployment_method == 'docker-compose', tags: ['docker-compose'] }
+    - { role: secrets-vault, tags: ['secrets'] }
+    - { role: monitoring, tags: ['monitoring'] }
+
+  post_tasks:
+    - name: Verify deployment health
+      include_tasks: ../tasks/health-check.yml
+
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ✓ Virtual Stock Trader deployment completed successfully!
+          Environment: {{ deployment_env }}
+          Method: {{ deployment_method }}
+          {% if deployment_method == 'kubernetes' %}
+          View resources: kubectl get all -n {{ namespace }}
+          {% else %}
+          View containers: docker-compose ps
+          {% endif %}

@@ -1,0 +1,84 @@
+---
+# roles/kubernetes/tasks/main.yml
+# Install Kubernetes tools and deploy manifests
+
+- name: Install kubectl
+  block:
+    - name: Download kubectl binary
+      get_url:
+        url: "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+      become: yes
+
+    - name: Verify kubectl installation
+      command: kubectl version --client
+      register: kubectl_version
+      changed_when: false
+
+    - name: Display kubectl version
+      debug:
+        msg: "{{ kubectl_version.stdout }}"
+
+- name: Install helm
+  block:
+    - name: Download helm install script
+      get_url:
+        url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+        dest: /tmp/get_helm.sh
+        mode: '0755'
+
+    - name: Run helm installation script
+      shell: /tmp/get_helm.sh
+      become: yes
+
+    - name: Verify helm installation
+      command: helm version
+      register: helm_version
+      changed_when: false
+
+    - name: Display helm version
+      debug:
+        msg: "{{ helm_version.stdout }}"
+
+- name: Create Kubernetes namespace
+  kubernetes.core.k8s:
+    name: "{{ namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy Kubernetes manifests using kustomize
+  shell: "kubectl apply -k {{ project_dir }}/k8s"
+  register: k8s_deploy
+  changed_when: "'unchanged' not in k8s_deploy.stdout"
+
+- name: Display Kubernetes deployment result
+  debug:
+    msg: "{{ k8s_deploy.stdout_lines }}"
+
+- name: Wait for deployments to become ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_condition:
+      type: Progressing
+      reason: NewReplicaSetAvailable
+      status: "True"
+    wait_sleep: 10
+    wait_timeout: 300
+
+- name: Verify pod status
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+  register: pod_status
+
+- name: Display pod status
+  debug:
+    msg: |
+      Pod Status:
+      {% for pod in pod_status.resources %}
+      - {{ pod.metadata.name }}: {{ pod.status.phase }}
+      {% endfor %}

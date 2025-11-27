@@ -1,0 +1,27 @@
+---
+# Secrets vault role default variables
+
+# Vault configuration
+vault_enabled: false
+vault_file: "ansible/vault.yml"
+
+# Secret management
+secrets:
+  mysql_root_password: "{{ mysql_root_password | default('vst_prod_password_change_me') }}"
+  spring_datasource_password: "{{ spring_datasource_password | default('vst_prod_password_change_me') }}"
+  jwt_secret: "{{ jwt_secret | default('your_jwt_secret_key_change_me') }}"
+  docker_hub_token: "{{ docker_hub_token | default('') }}"
+  github_token: "{{ github_token | default('') }}"
+
+# Secret storage paths
+secret_storage:
+  k8s_secret: "/tmp/app-secrets.yml"
+  env_file: "/tmp/.env"
+  vault_file: "ansible/vault.yml"
+
+# Secret rotation
+secret_rotation_enabled: false
+rotation_interval_days: 90
+
+# Encryption
+encryption_algorithm: "aes-256-cbc"

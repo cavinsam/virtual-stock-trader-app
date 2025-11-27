@@ -1,0 +1,51 @@
+---
+# roles/prerequisites/tasks/main.yml
+# Ensure prerequisites (git, curl, jq) are installed
+
+- name: Update package cache (Linux)
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  become: yes
+
+- name: Update package cache (RHEL-based)
+  yum:
+    update_cache: yes
+  when: ansible_os_family == "RedHat"
+  become: yes
+
+- name: Install prerequisites on Debian
+  apt:
+    name:
+      - git
+      - curl
+      - jq
+      - python3-pip
+      - python3-requests
+    state: present
+  when: ansible_os_family == "Debian"
+  become: yes
+
+- name: Install prerequisites on RHEL-based
+  yum:
+    name:
+      - git
+      - curl
+      - jq
+      - python3-pip
+      - python3-requests
+    state: present
+  when: ansible_os_family == "RedHat"
+  become: yes
+
+- name: Clone project repository
+  git:
+    repo: "{{ project_repo }}"
+    dest: "{{ project_dir }}"
+    version: main
+    force: yes
+
+- name: Display project directory
+  debug:
+    msg: "Project cloned to {{ project_dir }}"

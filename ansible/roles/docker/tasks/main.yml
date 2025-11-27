@@ -1,0 +1,76 @@
+---
+# roles/docker/tasks/main.yml
+# Install Docker and Docker Compose
+
+- name: Install Docker dependencies on Debian
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+  when: ansible_os_family == "Debian"
+  become: yes
+
+- name: Add Docker GPG key (Debian)
+  apt_key:
+    url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+    state: present
+  when: ansible_os_family == "Debian"
+  become: yes
+
+- name: Add Docker repository (Debian)
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+  when: ansible_os_family == "Debian"
+  become: yes
+
+- name: Install Docker (Debian)
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose
+    state: present
+  when: ansible_os_family == "Debian"
+  become: yes
+
+- name: Install Docker (RHEL-based)
+  yum:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  when: ansible_os_family == "RedHat"
+  become: yes
+
+- name: Start and enable Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Add user to docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+  become: yes
+
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Display Docker version
+  debug:
+    msg: "{{ docker_version.stdout }}"
+
+- name: Login to Docker Hub
+  shell: "echo '{{ registry_password }}' | docker login -u {{ registry_username }} --password-stdin"
+  when: registry_password | length > 0
+  no_log: true

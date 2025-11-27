@@ -1,0 +1,30 @@
+---
+# roles/secrets-vault/tasks/main.yml
+# Manage secrets using Ansible Vault
+
+- name: Create Kubernetes secrets for application
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'secret.yml.j2') }}"
+  when: deployment_method == 'kubernetes'
+
+- name: Create .env file for Docker Compose
+  template:
+    src: .env.j2
+    dest: "{{ project_dir }}/.env"
+    mode: '0600'
+  when: deployment_method == 'docker-compose'
+
+- name: Validate secrets are set
+  assert:
+    that:
+      - mysql_root_password | length > 0
+      - jwt_secret | length > 0
+    fail_msg: "Secrets (mysql_root_password, jwt_secret) must be provided via vault"
+
+- name: Display secret deployment status
+  debug:
+    msg: |
+      ✓ Secrets deployed successfully
+      - MySQL Root Password: Set (length: {{ mysql_root_password | length }})
+      - JWT Secret: Set (length: {{ jwt_secret | length }})

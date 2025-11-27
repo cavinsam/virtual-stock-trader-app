@@ -1,0 +1,41 @@
+---
+# Main Ansible orchestration tasks
+# This file defines the overall deployment flow and validation steps
+
+- name: Display deployment configuration
+  debug:
+    msg: |
+      ╔════════════════════════════════════════════════════════════════╗
+      ║        Virtual Stock Trader Deployment - Ansible               ║
+      ╠════════════════════════════════════════════════════════════════╣
+      ║ Deployment Target: {{ deployment_target }}
+      ║ Deployment Method: {{ deployment_method }}
+      ║ Environment: {{ deployment_environment | default('production') }}
+      ║ Deployment Hosts: {{ groups[deployment_target] | join(', ') }}
+      ╚════════════════════════════════════════════════════════════════╝
+
+- name: Include deployment method
+  include_tasks: "deploy_{{ deployment_method }}.yml"
+  vars:
+    deployment_method: "{{ deployment_method }}"
+
+- name: Run post-deployment validation
+  include_tasks: validate_deployment.yml
+  vars:
+    validation_timeout: 300
+    validation_retries: 30
+
+- name: Display deployment summary
+  debug:
+    msg: |
+      ╔════════════════════════════════════════════════════════════════╗
+      ║                  Deployment Completed Successfully             ║
+      ╠════════════════════════════════════════════════════════════════╣
+      ║ Method: {{ deployment_method }}
+      ║ Status: Ready for testing
+      ║ Next Steps:
+      ║  - Run application health checks
+      ║  - Execute integration tests
+      ║  - Verify frontend access
+      ║  - Test API endpoints
+      ╚════════════════════════════════════════════════════════════════╝
