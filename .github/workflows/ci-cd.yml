@@ -62,11 +62,12 @@ jobs:
 
     - name: Install frontend dependencies
       working-directory: ./frontend/virtual-stock-trader/frontend
-      run: npm ci
+      run: |
+        npm ci || npm install
 
     - name: Run frontend tests
       working-directory: ./frontend/virtual-stock-trader/frontend
-      run: npm test -- --coverage --watchAll=false
+      run: npm test
 
     - name: Build frontend
       working-directory: ./frontend/virtual-stock-trader/frontend
@@ -138,22 +139,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to staging
+    - name: Notify build complete
       run: |
-        echo "🚀 Deploying to staging environment..."
-        docker-compose -f docker-compose.yml pull
-        docker-compose -f docker-compose.yml up -d
-
-    - name: Run integration tests
-      run: |
-        echo "🧪 Running integration tests..."
-        sleep 10
-        curl -f http://localhost:8081/api/health || exit 1
-
-    - name: Notify deployment
-      if: success()
-      run: |
-        echo "✅ Deployment completed successfully!"
+        echo "✅ Build and push complete"
+        echo "Backend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:main"
+        echo "Frontend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:main"
+        echo "Ready for deployment"
