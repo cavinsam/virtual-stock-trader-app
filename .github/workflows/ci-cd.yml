@@ -149,9 +149,55 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Notify build complete
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Kubernetes credentials
       run: |
-        echo "✅ Build and push complete"
+        if [ -z "$KUBECONFIG_CONTENT" ]; then
+          echo "⚠️ KUBECONFIG secret not set. K8s deployment skipped."
+          echo "To enable K8s deployment:"
+          echo "1. Add KUBECONFIG secret in Settings → Secrets and variables → Actions"
+          echo "2. Set it to your cluster's kubeconfig (base64 encoded)"
+          exit 0
+        fi
+      env:
+        KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+
+    - name: Set up kubectl
+      if: secrets.KUBECONFIG != ''
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      if: secrets.KUBECONFIG != ''
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+        kubectl cluster-info
+
+    - name: Deploy to Kubernetes
+      if: secrets.KUBECONFIG != ''
+      run: |
+        echo "🚀 Deploying to Kubernetes cluster..."
+        kubectl apply -k k8s/
+        echo "⏳ Waiting for deployments to be ready..."
+        kubectl rollout status deployment/backend -n virtual-stock-trader --timeout=5m
+        kubectl rollout status deployment/frontend -n virtual-stock-trader --timeout=5m
+        echo "✅ Deployment complete!"
+        echo ""
+        echo "Cluster status:"
+        kubectl get all -n virtual-stock-trader
+
+    - name: Deployment notification
+      if: always()
+      run: |
+        echo "✅ Deployment job completed"
         echo "Backend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:main"
         echo "Frontend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:main"
-        echo "Ready for deployment"
+        echo ""
+        echo "To check deployment status:"
+        echo "  kubectl get pods -n virtual-stock-trader"
+        echo "  kubectl get svc -n virtual-stock-trader"

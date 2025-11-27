@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: virtual-stock-trader
+data:
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-service:3306/virtual_stock_trader"
+  SPRING_DATASOURCE_USERNAME: "root"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  ALPHAVANTAGE_API_KEY: "demo"  # Replace with your actual API key
