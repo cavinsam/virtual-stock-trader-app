@@ -1,0 +1,47 @@
+# Build artifacts
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+.project
+.classpath
+.settings/
+
+# Maven
+.m2/
+.maven/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+Jenkinsfile
+
+# Documentation
+*.md
+docs/
+
+# Environment
+.env
+.env.local
+
+# Node (if present)
+node_modules/
+npm-debug.log
+
+# OS
+.DS_Store
+Thumbs.db

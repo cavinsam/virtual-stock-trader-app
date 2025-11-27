@@ -14,6 +14,7 @@ public class VirtualStockTraderApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(VirtualStockTraderApplication.class, args);
 	}
+	
 
 }
 

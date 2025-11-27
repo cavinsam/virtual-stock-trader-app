@@ -46,19 +46,19 @@ jobs:
     - name: Run backend tests
       working-directory: ./backend/virtual-stock-trader
       run: |
-        mvn clean test -Dspring.datasource.url=jdbc:mysql://localhost:3306/virtual_stock_trader_test
-        -Dspring.datasource.username=root
-        -Dspring.datasource.password=test_password
-      env:
-        JWT_SECRET: test_jwt_secret
-        ALPHAVANTAGE_API_KEY: test_api_key
+        mvn clean test \
+          -Dspring.datasource.url=jdbc:mysql://localhost:3306/virtual_stock_trader_test \
+          -Dspring.datasource.username=root \
+          -Dspring.datasource.password=test_password \
+          -DJWT_SECRET=test_jwt_secret \
+          -DALPHAVANTAGE_API_KEY=test_api_key
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: frontend/virtual-stock-trader/frontend/package-lock.json
+        cache-dependency-path: ./frontend/virtual-stock-trader/frontend/package-lock.json
 
     - name: Install frontend dependencies
       working-directory: ./frontend/virtual-stock-trader/frontend
@@ -144,15 +144,16 @@ jobs:
     - name: Deploy to staging
       run: |
         echo "🚀 Deploying to staging environment..."
-        # Add your deployment commands here
-        # For example: kubectl apply -f k8s/ or docker-compose up -d
+        docker-compose -f docker-compose.yml pull
+        docker-compose -f docker-compose.yml up -d
 
     - name: Run integration tests
       run: |
         echo "🧪 Running integration tests..."
-        # Add integration test commands here
+        sleep 10
+        curl -f http://localhost:8081/api/health || exit 1
 
     - name: Notify deployment
+      if: success()
       run: |
         echo "✅ Deployment completed successfully!"
-        # Add notification logic here (Slack, email, etc.)
