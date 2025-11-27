@@ -147,6 +147,8 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    env:
+      KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
 
     steps:
     - name: Checkout code
@@ -161,25 +163,23 @@ jobs:
           echo "2. Set it to your cluster's kubeconfig (base64 encoded)"
           exit 0
         fi
-      env:
-        KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
 
     - name: Set up kubectl
-      if: ${{ secrets.KUBECONFIG != '' }}
+      if: env.KUBECONFIG_CONTENT != ''
       uses: azure/setup-kubectl@v3
       with:
         version: 'v1.28.0'
 
     - name: Configure kubectl
-      if: ${{ secrets.KUBECONFIG != '' }}
+      if: env.KUBECONFIG_CONTENT != ''
       run: |
         mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+        echo "$KUBECONFIG_CONTENT" | base64 -d > $HOME/.kube/config
         chmod 600 $HOME/.kube/config
         kubectl cluster-info
 
     - name: Deploy to Kubernetes
-      if: ${{ secrets.KUBECONFIG != '' }}
+      if: env.KUBECONFIG_CONTENT != ''
       run: |
         echo "🚀 Deploying to Kubernetes cluster..."
         kubectl apply -k k8s/
